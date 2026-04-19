@@ -1,16 +1,67 @@
-# React + Vite
+# NeuroChain AI
+**Supply Chain Disruption Simulator with AI-Assisted Rerouting**
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Live Demo: https://neurochain-ai.vercel.app
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Overview
 
-## React Compiler
+NeuroChain AI is a web-based simulation platform that models real-time supply chain disruptions and demonstrates adaptive rerouting logic. Users can inject disruptions (traffic, weather, congestion) and observe how the system responds with alternative delivery paths and dynamic hub placement.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Built as a solo project to explore applied logistics optimization and interactive system design.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Features
+
+- **Disruption Simulation** — Inject traffic, weather, or congestion events and observe system response
+- **Dynamic Rerouting** — Shipment agents recalculate paths when disruptions are detected
+- **Temporary Hub Placement** — System proposes intermediate relay points to reduce bottlenecks
+- **Risk Scoring Dashboard** — Each route displays an estimated risk score and rerouting rationale
+- **Live Map Interface** — Real-time visualization of shipments and routes via Leaflet
+- **Authentication** — Secure login with email/password and Google OAuth via Firebase
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, Tailwind CSS |
+| Backend / Auth | Firebase (Firestore, Cloud Functions, Auth) |
+| Maps | Leaflet.js |
+| Deployment | Vercel |
+
+---
+
+## How It Works
+
+1. User defines a shipment route across a map
+2. A disruption event is injected (manually or randomly)
+3. The system evaluates alternate paths based on weighted cost factors
+4. A rerouted path is displayed alongside a risk score and decision summary
+5. Optional: temporary intermediate hubs are placed to simulate relay logistics
+
+---
+
+## Limitations & Honest Scope
+
+- Routing logic is rule-based, not ML-driven
+- Disruption data is simulated, not pulled from live APIs
+- Designed as a proof-of-concept; not production-scale
+
+---
+
+## Roadmap
+
+- [ ] Integrate live traffic / weather APIs
+- [ ] Replace rule-based routing with reinforcement learning
+- [ ] Multi-agent communication between shipment nodes
+- [ ] Export rerouting reports as PDF
+
+---
+
+## Author
+
+**Jaideep Singh Anand**  
