@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  padding: 0;
+  color: theme('colors.gray.800');
+  background-color: #f7f7f9;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.dark body {
+  color: theme('colors.gray.100');
+  background-color: #242424;
+}
+
+@layer utilities {
+  .premium-card {
+    border-radius: 1.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.05);
+    border: none;
+  }
+  
+  .premium-input {
+    border-radius: 1rem;
+    background-color: #f0f0f4;
+    border: 2px solid transparent;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .premium-input:focus {
+    background-color: #ffffff;
+    border-color: theme('colors.blue.500');
+    box-shadow: 0 0 0 4px theme('colors.blue.100');
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.dark .premium-card {
+  background-color: #2d2d2d;
+  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.4);
+}
+
+.dark .premium-input {
+  background-color: #3b3b3b;
+  color: #ffffff;
+}
+
+.dark .premium-input:focus {
+  background-color: #2d2d2d;
+  border-color: theme('colors.teal.400');
+  box-shadow: 0 0 0 4px rgb(45 212 191 / 0.1);
+}
+
+.dark .premium-input::placeholder {
+  color: #888888;
+}
+
+.dark .glass {
+  background-color: rgb(30 41 59 / 0.7);
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.dark .glass-card {
+  background-color: rgb(30 41 59 / 0.8);
+  border-color: rgb(51 65 85 / 0.5);
+}
+
+.dark select {
+  background-color: #3b3b3b;
+  color: #ffffff;
+}
+
+.dark select option {
+  background-color: #2d2d2d;
+  color: #ffffff;
+}
+
+/* Custom styling for leaflet popups in dark mode */
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background-color: theme('colors.slate.800');
+  color: theme('colors.gray.100');
+}

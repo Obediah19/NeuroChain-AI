@@ -1,0 +1,61 @@
+How to Deploy Now & Update Instantly from IDE
+First-time setup (do once):
+
+# Install CLIs
+npm install -g vercel firebase-tools
+
+# Login
+vercel login
+firebase login
+
+# Link project to Vercel (if asked)
+cd "Solution Challenge 2026"
+vercel link  # choose project or create new
+Set production environment variables in Vercel (required):
+
+vercel env add VITE_FIREBASE_API_KEY production
+vercel env add VITE_FIREBASE_AUTH_DOMAIN production
+vercel env add VITE_FIREBASE_PROJECT_ID production
+vercel env add VITE_FIREBASE_STORAGE_BUCKET production
+vercel env add VITE_FIREBASE_MESSAGING_SENDER_ID production
+vercel env add VITE_FIREBASE_APP_ID production
+vercel env add VITE_FIREBASE_MEASUREMENT_ID production
+vercel env add VITE_GEMINI_API_KEY production
+vercel env add VITE_GROQ_API_KEY production
+(Values are in your .env — never commit secrets.)
+
+Initial deployment (frontend + backend):
+
+# From project root — deploys both
+npm run deploy:all
+This runs firebase deploy --only functions then vercel --prod.
+
+After You Change 2 Lines of Code — 30-Second Update
+Just run these from your IDE terminal:
+
+Frontend only (UI/map/logic changes):
+
+npm run deploy
+Rebuilds and pushes to Vercel. Live site updates in ~30 seconds. No dashboard needed.
+
+Firebase Functions only (backend logic):
+
+npm run deploy:functions
+Both (full stack change):
+
+npm run deploy:all
+That's it — no opening vercel.com, no manual steps. CLI handles everything.
+
+Quick Reference
+Action	Command
+Start dev server	npm run dev
+Build locally	npm run build
+Deploy frontend	npm run deploy
+Deploy functions	npm run deploy:functions
+Deploy everything	npm run deploy:all
+View function logs	firebase functions:log
+Test Firestore locally	firebase emulators:start
+Notes
+No errors: Environment variables are in vercel.json mappings; they're pulled from Vercel's env store on each deploy.
+Live data updates don't require deployment — Firestore listeners update the app in real time.
+Dataset size: Including 4232 cities adds ~200KB to bundle — acceptable. Dropdown only loads matches after typing, keeping UI snappy.
