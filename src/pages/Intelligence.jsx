@@ -153,7 +153,7 @@ function ExplainModal({ isOpen, onClose, explanation }) {
             <p className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide opacity-80 mb-1">
               Decision Recorded
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
               {explanation || 'The AI detected severe congestion (95%) at the hub due to adverse weather conditions. Analysis of alternative routes revealed that creating a temporary ghost node in Hyderabad would reduce delivery delay by 85% while minimizing additional distance. The swarm algorithm selected this optimal path based on real-time risk assessment.'}
             </p>
           </div>

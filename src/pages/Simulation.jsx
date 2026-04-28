@@ -7,7 +7,8 @@ import { useSupplyChain } from '../context/SupplyChainContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   FlaskConical, CloudLightning, Truck, Warehouse, Zap, AlertTriangle,
-  Play, MapPin, Plus, Navigation, History, Brain, ChevronDown, CheckCircle, Clock
+  Play, MapPin, Plus, Navigation, History, Brain, ChevronDown, CheckCircle, Clock,
+  XCircle, Lightbulb, Sparkles
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
@@ -154,7 +155,12 @@ const SimMap = memo(function SimMap({ mapUrl, routePositions, nodes, shipments, 
             <div className="text-center">
               <p className="font-bold">{nd.name}</p>
               <p className="text-sm">Congestion: {Math.round(nd.congestion * 100)}%</p>
-              {nd.type === 'ghost' && <p className="text-sm text-purple-500 font-bold">⚡ AI Ghost Node</p>}
+              {nd.type === 'ghost' && (
+                <>
+                  <p className="text-sm text-purple-500 font-bold">⚡ {nd.source === 'user' ? 'User Suggested Hub' : 'AI Temporary Hub'}</p>
+                  {nd.createdFor && <p className="text-xs text-gray-500">Created for: {nd.createdFor}</p>}
+                </>
+              )}
               {disruptedCities.has(nd.id) && <p className="text-sm text-red-500 font-bold">⚠ Disrupted</p>}
             </div>
           </Popup>
@@ -175,7 +181,7 @@ const SimMap = memo(function SimMap({ mapUrl, routePositions, nodes, shipments, 
 export default function Simulation() {
   const {
     nodes, routes, shipments, alerts,
-    triggerSimulation, addShipment, addGhostNode, getGhostCandidates,
+    triggerSimulation, addShipment, suggestGhostNode, deployUserGhostNode, getGhostCandidates,
     activeSimulation, simHistory, disruptedCities,
   } = useSupplyChain();
   const { theme } = useTheme();
@@ -191,9 +197,11 @@ export default function Simulation() {
   const [error,             setError]             = useState(null);
   const [showHistory,       setShowHistory]       = useState(false);
   const [showAddDelivery,   setShowAddDelivery]   = useState(false);
-  const [showGhostNodeForm, setShowGhostNodeForm] = useState(false);
-  const [ghostNodeSearch,   setGhostNodeSearch]   = useState('');
-  const [ghostNodeCity,     setGhostNodeCity]     = useState(null);
+  const [showSuggestHub,    setShowSuggestHub]    = useState(false);
+  const [suggestSearch,     setSuggestSearch]     = useState('');
+  const [suggestCity,       setSuggestCity]       = useState(null);
+  const [suggestResult,     setSuggestResult]     = useState(null);
+  const [suggestLoading,    setSuggestLoading]    = useState(false);
   const [originSearch,      setOriginSearch]      = useState('');
   const [targetSearch,      setTargetSearch]      = useState('');
   const [originNode,        setOriginNode]        = useState(null);
@@ -208,11 +216,13 @@ export default function Simulation() {
     return f && t ? [[f.lat, f.lng], [t.lat, t.lng]] : null;
   }).filter(Boolean);
 
+  const activeShipments = shipments.filter(s => s.status !== 'delivered');
   const affectedShipments = selectedCity
-    ? shipments.filter(s => s.target === selectedCity.id && s.status !== 'delivered')
+    ? activeShipments.filter(s => s.target === selectedCity.id)
     : [];
 
   const filteredCities = citySearch.length >= 2 ? searchCities(citySearch, 8) : [];
+  const ghostNodes = nodes.filter(n => n.type === 'ghost');
 
   const handleRun = async () => {
     if (!selectedCity || !selectedType || isRunning) return;
@@ -239,15 +249,29 @@ export default function Simulation() {
     } catch (e) { setError(e.message); }
   };
 
-  const handleAddGhostNode = async () => {
-    if (!ghostNodeCity) return;
+  // 🔥 User suggests a ghost node → AI validates
+  const handleSuggestHub = () => {
+    if (!suggestCity) return;
+    setSuggestLoading(true);
+    setSuggestResult(null);
+    // Small delay for dramatic effect
+    setTimeout(() => {
+      const result = suggestGhostNode(suggestCity);
+      setSuggestResult(result);
+      setSuggestLoading(false);
+    }, 800);
+  };
+
+  // Deploy accepted suggestion
+  const handleDeploySuggestion = async () => {
+    if (!suggestCity || !suggestResult?.accepted) return;
     try {
-      await addGhostNode(ghostNodeCity);
-      setShowGhostNodeForm(false);
-      setGhostNodeSearch('');
-      setGhostNodeCity(null);
-    }
-    catch (e) { setError(e.message); }
+      await deployUserGhostNode(suggestCity, suggestResult);
+      setShowSuggestHub(false);
+      setSuggestSearch('');
+      setSuggestCity(null);
+      setSuggestResult(null);
+    } catch (e) { setError(e.message); }
   };
 
   /* Active sim step panel — reads from context so it survives tab change */
@@ -276,6 +300,34 @@ export default function Simulation() {
 
       {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl"><p className="text-red-600 dark:text-red-400 text-sm">{error}</p></div>}
 
+      {/* ── Active AI Ghost Nodes Panel ── */}
+      {ghostNodes.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl border border-purple-200 dark:border-purple-800 p-5">
+          <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Sparkles size={14} /> Active AI Ghost Nodes ({ghostNodes.length})
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ghostNodes.map(gn => (
+              <div key={gn.id} className="bg-white dark:bg-[#2d2d2d] rounded-xl border border-purple-200 dark:border-purple-700 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse flex-shrink-0" />
+                  <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">{gn.name}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+                  <span className={`px-1.5 py-0.5 rounded-full font-bold ${gn.source === 'user' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                    {gn.source === 'user' ? '👤 User Suggested' : '🧠 AI Created'}
+                  </span>
+                  {gn.delayReduction && <span className="text-green-600 dark:text-green-400 font-bold">↓{gn.delayReduction}% delay</span>}
+                </div>
+                {gn.createdFor && gn.createdFor !== 'user-suggestion' && (
+                  <p className="text-[10px] text-gray-400 mt-1">Created for: {gn.createdFor}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Simulation History Panel ── */}
       {showHistory && simHistory.length > 0 && (
         <div className="bg-white dark:bg-[#2d2d2d] rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
@@ -288,6 +340,15 @@ export default function Simulation() {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{h.typeLabel} — {h.cityName}</span>
                   <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} /> {h.completedAt}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-bold">
+                    🧠 {h.ghostNodeLabel || `⚡ ${h.ghostNodeName} (AI Temporary Hub)`}
+                  </span>
+                  {h.delayReduction && <span className="text-[10px] text-green-600 dark:text-green-400 font-bold">↓{h.delayReduction}% delay</span>}
+                  {h.affectedShipments?.length > 0 && (
+                    <span className="text-[10px] text-gray-400">Shipments: {h.affectedShipments.join(', ')}</span>
+                  )}
                 </div>
                 <p className="text-xs text-purple-600 dark:text-purple-400">🤖 {h.aiLog}</p>
               </div>
@@ -365,6 +426,9 @@ export default function Simulation() {
                 ℹ️ No active shipments heading to {selectedCity.name} right now. Add one in Live Operations to see rerouting in action.
               </p>
             )}
+            <p className="text-xs mt-1 opacity-60 italic">
+              🧠 AI will automatically create an optimal ghost node during simulation
+            </p>
           </div>
         )}
 
@@ -411,6 +475,12 @@ export default function Simulation() {
               <p className="text-green-700 dark:text-green-400 font-bold text-sm">
                 Rerouting complete. AI reasoning logged — check the <strong>AI Intelligence</strong> tab.
               </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-bold">
+                  🧠 {sim.result.ghostNodeLabel || sim.result.ghostNodeName}
+                </span>
+                {sim.result.delayReduction && <span className="text-[10px] text-green-600 font-bold">↓{sim.result.delayReduction}% delay reduction</span>}
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">🤖 {sim.result.aiLog}</p>
             </div>
           )}
@@ -428,7 +498,7 @@ export default function Simulation() {
             mapUrl={mapUrl}
             routePositions={routePositions}
             nodes={nodes}
-            shipments={shipments}
+            shipments={activeShipments}
             disruptedCities={disruptedCities}
           />
         </div>
@@ -436,7 +506,7 @@ export default function Simulation() {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Normal</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Moderate</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Congested / Disrupted</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />Ghost Node</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />Ghost Node (AI)</span>
         </div>
       </div>
 
@@ -446,34 +516,77 @@ export default function Simulation() {
           <Zap size={18} className="text-amber-500" /> Quick Actions
         </h3>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => setShowGhostNodeForm(v => !v)} className="px-4 py-2 bg-purple-500 text-white text-sm font-medium rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2">
-            <MapPin size={14} /> Deploy Ghost Node
+          <button onClick={() => setShowSuggestHub(v => !v)} className="px-4 py-2 bg-purple-500 text-white text-sm font-medium rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2">
+            <Lightbulb size={14} /> Suggest Temporary Hub
           </button>
           <button onClick={() => setShowAddDelivery(v => !v)} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
             <Plus size={14} /> Add Delivery
           </button>
         </div>
 
-        {showGhostNodeForm && (
+        {/* 🔥 Suggest Ghost Node (User → AI Validates) */}
+        {showSuggestHub && (
           <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-200 dark:border-purple-800">
-            <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-3 text-sm flex items-center gap-2">
-              <MapPin size={14} className="text-purple-500" /> Deploy AI Ghost Node
+            <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2 text-sm flex items-center gap-2">
+              <Lightbulb size={14} className="text-purple-500" /> Suggest a Temporary Hub
             </h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Select a city to deploy a temporary ghost node for emergency shipment rerouting.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Suggest a city as a temporary hub. <strong>AI will validate</strong> whether it's optimal — not all suggestions are accepted.
+            </p>
             <CitySearchDropdown
-              label="Ghost Node City"
-              value={ghostNodeSearch}
-              onChange={setGhostNodeSearch}
+              label="Suggested City"
+              value={suggestSearch}
+              onChange={setSuggestSearch}
               onSelect={(city) => {
-                setGhostNodeSearch(city.name);
-                setGhostNodeCity(city);
+                setSuggestSearch(city.name);
+                setSuggestCity(city);
+                setSuggestResult(null); // reset previous result
               }}
-              placeholder="Search for a city..."
+              placeholder="e.g. Nagpur, Hyderabad..."
             />
-            <button onClick={handleAddGhostNode} disabled={!ghostNodeCity}
+
+            <button onClick={handleSuggestHub} disabled={!suggestCity || suggestLoading}
               className="mt-3 w-full py-2 text-sm bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <Zap size={14} /> Deploy Ghost Node{ghostNodeCity ? ` — ${ghostNodeCity.name}` : ''}
+              {suggestLoading
+                ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />AI Evaluating...</>
+                : <><Brain size={14} /> Submit for AI Validation{suggestCity ? ` — ${suggestCity.name}` : ''}</>
+              }
             </button>
+
+            {/* AI Validation Result */}
+            {suggestResult && (
+              <div className={`mt-3 p-3 rounded-xl border-l-4 transition-all animate-fade-in ${suggestResult.accepted
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {suggestResult.accepted
+                    ? <CheckCircle size={16} className="text-green-500" />
+                    : <XCircle size={16} className="text-red-500" />
+                  }
+                  <span className={`font-bold text-sm ${suggestResult.accepted ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {suggestResult.accepted ? 'Accepted by AI' : 'Rejected by AI'}
+                  </span>
+                  {suggestResult.efficiency != null && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
+                      {suggestResult.efficiency}% efficiency
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300">{suggestResult.reason}</p>
+                {suggestResult.accepted && (
+                  <button onClick={handleDeploySuggestion}
+                    className="mt-2 w-full py-2 text-sm bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                    <Zap size={14} /> Deploy {suggestCity?.name} as Temporary Hub
+                  </button>
+                )}
+                {!suggestResult.accepted && suggestResult.optimalCity && (
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2 font-medium">
+                    💡 AI recommends: {suggestResult.optimalCity.name}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
